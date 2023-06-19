@@ -1,0 +1,145 @@
+%{
+int currLine = 1;
+int i = 0;
+int first_char = 1;
+%}
+
+%%
+" "
+"\n"  currLine++;
+
+"\"Get\""       printf("%d tGET\n", currLine);
+"\"Set\""       printf("%d tSET\n", currLine);
+"\"Function\""  printf("%d tFUNCTION\n", currLine);
+"\"Print\""     printf("%d tPRINT\n", currLine);
+"\"For\""       printf("%d tFOR\n", currLine);
+"\"If\""        printf("%d tIF\n", currLine);
+"\"Return\""    printf("%d tRETURN\n", currLine);
+","        printf("%d tCOMMA\n", currLine);
+"\"+\""    printf("%d tPLUS\n", currLine);
+"\"*\""    printf("%d tMUL\n", currLine);
+"\"++\""   printf("%d tINC\n", currLine);
+"["        printf("%d tLBRAC\n", currLine);
+"\">\""    printf("%d tGT\n", currLine);
+"\">=\""   printf("%d tGEQ\n", currLine);
+"\"==\""   printf("%d tEQUALITY\n", currLine);
+"\"-\""    printf("%d tMINUS\n", currLine);
+"\"/\""    printf("%d tDIV\n", currLine);
+"\"--\""   printf("%d tDEC\n", currLine);
+"]"        printf("%d tRBRAC\n", currLine);
+"\"<\""    printf("%d tLT\n", currLine);
+"\"<=\""   printf("%d tLEQ\n", currLine);
+
+["][a-zA-Z_][a-zA-Z0-9_]*["]	{
+  printf("%d tIDENT (%.*s)\n", currLine, yyleng-2, yytext+1);
+  
+}
+
+-?[0-9]+"."[0-9]+   {  
+  char copy_string[yyleng];
+  for (i = 0; i < yyleng; i++){
+  copy_string[i] = '\0'; // filling with null characters
+  }
+  int zero_counter = 1;
+  int j;
+  for(j = 0, i = 0; j < yyleng; j++ )
+  {
+    if(yytext[j] == '.')
+    {
+      if(i == 0)
+      {
+        copy_string[i] = '0';
+        i++;  
+      }
+      else if(copy_string[i-1] == '-')
+      {
+        copy_string[i] = '0';
+        i++;
+      }
+      copy_string[i] = yytext[j];
+      i++;
+      break;
+    }
+    else if((yytext[j] != '0') || (zero_counter == 0))
+    {
+      copy_string[i] = yytext[j];
+      if(yytext[j] != '-')
+      {
+        zero_counter = 0;
+      }
+      i++;
+    }
+  }
+  int lastprec = yyleng -1;
+  for(;lastprec > j; lastprec = lastprec -1)
+  {
+    if(yytext[lastprec] != '0')
+    {
+      break;
+    }
+  }
+  j = j + 1;
+  if(j > lastprec)
+  {
+    copy_string[i] = '0';
+    i = i + 1;
+  }
+  for(;j <= lastprec; j++)
+  {
+    copy_string[i] = yytext[j];
+    i = i + 1;
+  }
+  printf("%d tNUM (%s) (%s)\n", currLine, yytext, copy_string);
+}
+ 
+
+[-]?[0-9]+  {
+            char copy_string[100];
+            int j;
+            for(i=0;i<sizeof(copy_string);i++) {
+		copy_string[i] = '\0';
+	}
+            int deleted = 1;
+            for(i=0,j=0;i<yyleng;i++){
+                if((deleted == 0) || (yytext[i] !='0')){
+                    copy_string[j] = yytext[i];
+                    if(yytext[i] != '-' ){ deleted = 0;}
+                    else { deleted = 1;}
+                j++;}
+            }
+			printf("%d tNUM (%s) (%s) \n",currLine,yytext,copy_string);
+}
+
+
+['][^']*['] {
+  first_char = currLine;
+  int iter;
+  for(iter = 1; iter < yyleng; iter++ )
+  {
+    if(yytext[iter] == '\'')
+    {
+      break;
+    }
+    else
+    {
+      if(yytext[iter] == '\n')
+      {
+        currLine++;
+      }
+    }
+  }
+  printf("%d tSTRING (%.*s)\n", first_char, yyleng-2, yytext+1);
+}
+
+. {
+  printf("%d ILLEGAL CHARACTER (%s)\n", currLine, yytext);
+}
+  
+%%
+
+int main()
+{
+  yylex();
+  return(0);
+}
+
